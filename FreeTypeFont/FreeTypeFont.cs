@@ -1,0 +1,149 @@
+using System.Collections;
+using UnityEngine;
+
+[ExecuteInEditMode]
+public class FreeTypeFont : MonoBehaviour
+{
+    public TextAsset m_fontAsset;
+    public Material material;
+
+    private string[] m_fontNames = null;
+    private FreeTypeFontAtlas m_atlas;
+    private bool m_updateScheduled = false;
+    private bool m_textureEnlarged = false;
+    private bool m_textureUpdated = false;
+
+    public static event System.Action<FreeTypeFont> textureRebuilt;
+
+    public string[] fontNames
+    {
+        get { return m_fontNames; }
+    }
+
+    void Init()
+    {
+        if (m_atlas == null && m_fontAsset != null)
+        {
+            m_atlas = new FreeTypeFontAtlas(m_fontAsset);
+            m_atlas.textureEnglarged += OnTextureEnlarged;
+            m_atlas.textureUpdated += OnTextureUpdated;
+
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Unlit/FreeType Text"));
+                material.hideFlags = HideFlags.DontSave | HideFlags.NotEditable;
+            }
+            material.mainTexture = m_atlas.Texture;
+
+            m_fontNames = new string[] { m_fontAsset.name };
+#if !UNITY_EDITOR
+            m_fontAsset = null;
+#endif
+        }
+    }
+
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        if (m_atlas != null)
+        {
+            m_atlas.Dispose();
+            m_atlas = null;
+        }
+        Init();
+    }
+#endif
+
+    public void RequestCharactersInTexture(string characters, int size = 0, FontStyle style = FontStyle.Normal)
+    {
+        Init();
+
+        if (m_atlas != null)
+        {
+            int outlineSize = (size >> 16) & 0xFFFF;
+            size = size & 0xFFFF;
+            FreeTypeFontAtlas.Glyph glyph;
+            for (int i = 0; i < characters.Length; i++)
+            {
+                m_atlas.AqurieGlyph(characters[i], out glyph, size, outlineSize, style == FontStyle.Bold);
+            }
+        }
+    }
+
+    public bool GetCharacterInfo(char ch, out CharacterInfo info, int size = 0, FontStyle style = FontStyle.Normal)
+    {
+        info = new CharacterInfo();
+
+        Init();
+
+        if (m_atlas != null)
+        {
+            int outlineSize = (size >> 16) & 0xFFFF;
+            size = size & 0xFFFF;
+            FreeTypeFontAtlas.Glyph glyph;
+            if (m_atlas.AqurieGlyph(ch, out glyph, size, outlineSize, style == FontStyle.Bold))
+            {
+                var rect = glyph.uv;
+                info = new CharacterInfo
+                {
+                    index = glyph.ftGlyph.code,
+                    advance = glyph.ftGlyph.advance,
+                    bearing = glyph.ftGlyph.bearing,
+                    minX = glyph.ftGlyph.minX,
+                    maxX = glyph.ftGlyph.maxX,
+                    minY = glyph.ftGlyph.minY,
+                    maxY = glyph.ftGlyph.maxY,
+                    size = size,
+                    style = style,
+                    glyphWidth = glyph.ftGlyph.width - outlineSize,
+                    glyphHeight = glyph.ftGlyph.height - outlineSize,
+                    uvBottomLeft = new Vector2(rect.xMin, rect.yMax),
+                    uvBottomRight = new Vector2(rect.xMax, rect.yMax),
+                    uvTopLeft = new Vector2(rect.xMin, rect.yMin),
+                    uvTopRight = new Vector2(rect.xMax, rect.yMin),
+                };
+            }
+        }
+        return info.index != 0;
+    }
+
+    private void OnTextureEnlarged()
+    {
+        m_textureEnlarged = true;
+        ScheduleUpdate();
+    }
+
+    private void OnTextureUpdated()
+    {
+        m_textureUpdated = true;
+        ScheduleUpdate();
+    }
+
+    public void ScheduleUpdate()
+    {
+        if (!m_updateScheduled)
+        {
+            FreeTypeFontUpdater.ScheduleUpdate(() =>
+            {
+                if (m_textureEnlarged)
+                {
+                    if (material != null)
+                    {
+                        material.mainTexture = m_atlas.Texture;
+                    }
+                    textureRebuilt(this);
+                    m_textureEnlarged = false;
+                }
+
+                if (m_textureUpdated)
+                {
+                    m_textureUpdated = false;
+                    m_atlas.ApplyPacker();
+                }
+                m_updateScheduled = false;
+            });
+
+            m_updateScheduled = true;
+        }
+    }
+}
