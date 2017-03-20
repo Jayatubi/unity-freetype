@@ -32,3 +32,14 @@ You may also need the NDK/Xcode/Visual Studio for each platform. After the plugi
     4. Change the extension TTF font file you used to `.bytes` and drag it into the `Font Asset` field to the FreeTypeFont.
     5. Change the `Font Type` of UIFont to `Dynamic` and drag the FreeTypeFont component into the `TTF Font` field of the UIFont.
     
+## Know issues
+
+This project (might) isn't so good as the Unity built-in one because:
+
+1. It uses a poor algorithm the packing glyphs. A little more space wasting than the built-in one.
+2. It uses a 16 bit texture in order to render the glyph stroke.
+3. It composed two colors into to one, for the color of the font face and font stroke, so the vertex color fo the text represents as RGBA444. 
+
+## Do I need it?
+
+If you think the text apperance in your project is good enough don't look into this. If you want to tweak the text in the FreeType level, clone this repo and make any changes you like.
