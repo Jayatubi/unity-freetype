@@ -26,10 +26,9 @@ You may also need the NDK/Xcode/Visual Studio for each platform. After the plugi
 1. Copy the folder `FreeTypeFont` into you Unity project.
 2. Add `-unsafe` to the file `smcs.rsp` and `gmcs.rsp`. If you don't have such file in your Unity project just create a new one.
 3. To use this font provide with NGUI:
-
-    3.1 Seach all the `Font` in the NGUI source code and replace it with `FreeTypeFont`.
-    3.2 Copy all the files under `Shaders` into the NGUI shader folder.
-    3.3 Create a prefab and add two components: UIFont(From NGUI) and FreeTypeFont(From this project).
-    3.5 Change the extension TTF font file you used to `.bytes` and drag it into the `Font Asset` field to the FreeTypeFont.
-    3.6 Change the `Font Type` of UIFont to `Dynamic` and drag the FreeTypeFont component into the `TTF Font` field of the UIFont.
+    1. Seach all the `Font` in the NGUI source code and replace it with `FreeTypeFont`.
+    2. Copy all the files under `Shaders` into the NGUI shader folder.
+    3. Create a prefab and add two components: UIFont(From NGUI) and FreeTypeFont(From this project).
+    4. Change the extension TTF font file you used to `.bytes` and drag it into the `Font Asset` field to the FreeTypeFont.
+    5. Change the `Font Type` of UIFont to `Dynamic` and drag the FreeTypeFont component into the `TTF Font` field of the UIFont.
     
