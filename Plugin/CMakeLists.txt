@@ -15,7 +15,14 @@ project(${PROJ})
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/src/freetype/include)
 
 add_definitions(-DFT2_BUILD_LIBRARY)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fvisibility=hidden")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden -Wno-shorten-64-to-32")
+
+if(${TARGET_PLATFORM} STREQUAL Android)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s")
+endif()
 
 set(FREETYPE_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/freetype/src)
 set(freetype_sources
