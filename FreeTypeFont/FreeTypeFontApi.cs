@@ -28,7 +28,10 @@ public static class FreeTypeFontApi
     private const string s_library = "unity-freetype";
 #endif
     [DllImport(s_library)]
-    public static extern IntPtr UFT_CreateFontContext(IntPtr data, int length);
+    public static extern IntPtr UFT_CreateFontContextByFile(string path);
+
+    [DllImport(s_library)]
+    public static extern IntPtr UFT_CreateFontContextByData(IntPtr data, int length);
 
     [DllImport(s_library)]
     public static extern void UFT_DeleteFontContext(IntPtr pContext);
@@ -40,17 +43,22 @@ public static class FreeTypeFontApi
     public static extern IntPtr UFT_MemoryCopy(IntPtr pDst, IntPtr pSrc, int size);
     #endregion
 
-    unsafe public static IntPtr CreateFontContext(TextAsset asset)
+    unsafe public static IntPtr CreateFontContext(byte[] bytes)
     {
         IntPtr result = IntPtr.Zero;
-        if (asset != null)
+        if (bytes != null)
         {
-            fixed (byte* pData = asset.bytes)
+            fixed (byte* pData = bytes)
             {
-                result = UFT_CreateFontContext((IntPtr)pData, asset.bytes.Length);
+                result = UFT_CreateFontContextByData((IntPtr)pData, bytes.Length);
             }
         }
         return result;
+    }
+
+    public static IntPtr CreateFontContext(string path)
+    {
+        return UFT_CreateFontContextByFile(path);
     }
 
     public static void DeleteFontContext(IntPtr pContext)

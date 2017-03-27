@@ -1,13 +1,16 @@
-using System.Collections;
 using UnityEngine;
+using System.IO;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [ExecuteInEditMode]
 public class FreeTypeFont : MonoBehaviour
 {
     public TextAsset m_fontAsset;
-    public Material material;
+    public Material m_material;
 
-    private string[] m_fontNames = null;
+    private string m_fontName = null;
     private FreeTypeFontAtlas m_atlas;
     private bool m_updateScheduled = false;
     private bool m_textureEnlarged = false;
@@ -15,30 +18,48 @@ public class FreeTypeFont : MonoBehaviour
 
     public static event System.Action<FreeTypeFont> textureRebuilt;
 
+    public Material material
+    {
+        get { return m_material; }
+    }
+
     public string[] fontNames
     {
-        get { return m_fontNames; }
+        get { return new string[] { m_fontName }; }
     }
 
     void Init()
     {
         if (m_atlas == null && m_fontAsset != null)
         {
-            m_atlas = new FreeTypeFontAtlas(m_fontAsset);
-            m_atlas.textureEnglarged += OnTextureEnlarged;
-            m_atlas.textureUpdated += OnTextureUpdated;
+            m_fontName = m_fontAsset.name;
 
-            if (material == null)
+            var fontFile = Path.Combine(Application.persistentDataPath, Path.Combine("Font", m_fontAsset.name));
+            var fileInfo = new FileInfo(fontFile);
+            if (!fileInfo.Exists || fileInfo.Length != m_fontAsset.bytes.Length)
             {
-                material = new Material(Shader.Find("Unlit/FreeType Text"));
-                material.hideFlags = HideFlags.DontSave | HideFlags.NotEditable;
+                Directory.CreateDirectory(fileInfo.DirectoryName);
+                File.WriteAllBytes(fontFile, m_fontAsset.bytes);
             }
-            material.mainTexture = m_atlas.Texture;
-
-            m_fontNames = new string[] { m_fontAsset.name };
+            Resources.UnloadAsset(m_fontAsset);
+            m_atlas = new FreeTypeFontAtlas(fontFile);
 #if !UNITY_EDITOR
             m_fontAsset = null;
 #endif
+
+            m_atlas.textureEnglarged += OnTextureEnlarged;
+            m_atlas.textureUpdated += OnTextureUpdated;
+
+            m_atlas.textureEnglarged += OnTextureEnlarged;
+            m_atlas.textureUpdated += OnTextureUpdated;
+
+            if (m_material == null)
+            {
+                m_material = new Material(Shader.Find("Unlit/FreeType Text"));
+                m_material.hideFlags = HideFlags.DontSave | HideFlags.NotEditable;
+            }
+            m_material.mainTexture = m_atlas.Texture;
+            m_updateScheduled = false;
         }
     }
 
@@ -50,6 +71,7 @@ public class FreeTypeFont : MonoBehaviour
             m_atlas.Dispose();
             m_atlas = null;
         }
+
         Init();
     }
 #endif
@@ -127,18 +149,14 @@ public class FreeTypeFont : MonoBehaviour
             {
                 if (m_textureEnlarged)
                 {
-                    if (material != null)
-                    {
-                        material.mainTexture = m_atlas.Texture;
-                    }
                     textureRebuilt(this);
                     m_textureEnlarged = false;
                 }
 
                 if (m_textureUpdated)
                 {
-                    m_textureUpdated = false;
                     m_atlas.ApplyPacker();
+                    m_textureUpdated = false;
                 }
                 m_updateScheduled = false;
             });

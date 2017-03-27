@@ -1,48 +1,30 @@
+using System.Collections;
 using UnityEngine;
 
 [ExecuteInEditMode]
 public class FreeTypeFontUpdater : MonoBehaviour
 {
-    private static FreeTypeFontUpdater s_instance;
-
-    private event System.Action m_updateQueue;
 
     public static void ScheduleUpdate(System.Action handler)
     {
-        if (s_instance == null)
+        var name = "FreeTypeFontUpdater";
+        var go = GameObject.Find(name);
+        if (go == null)
         {
-            var name = "FreeTypeFontUpdater";
-            var go = GameObject.Find(name);
-            if (go == null)
-            {
-                go = new GameObject(name);
-            }
-            s_instance = go.GetComponent<FreeTypeFontUpdater>();
-            if (s_instance == null)
-            {
-                s_instance = go.AddComponent<FreeTypeFontUpdater>();
-                s_instance.hideFlags = HideFlags.HideAndDontSave;
-            }
-            if (Application.isPlaying)
-            {
-                DontDestroyOnLoad(s_instance);
-            }
+            go = new GameObject(name);
+            go.hideFlags = HideFlags.HideAndDontSave;
         }
-
-        s_instance.m_updateQueue += handler;
+        var updater = go.GetComponent<FreeTypeFontUpdater>();
+        if (updater == null)
+        {
+            updater = go.AddComponent<FreeTypeFontUpdater>();
+        }
+        updater.StartCoroutine(UpdateImpl(handler));
     }
 
-    void Update()
+    private static IEnumerator UpdateImpl(System.Action handler)
     {
-        if (m_updateQueue != null)
-        {
-            m_updateQueue();
-            m_updateQueue = null;
-        }
-    }
-
-    void OnDestroy()
-    {
-        s_instance = null;
+        yield return 0;
+        handler();
     }
 }

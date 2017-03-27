@@ -148,16 +148,27 @@ public class FreeTypeFontAtlas : IDisposable
         }
     }
 
-    private Dictionary<GlyphParam, Glyph> m_glyphs;
     private IntPtr m_fontContext;
+    private Dictionary<GlyphParam, Glyph> m_glyphs;
     private AtlasPacker m_packer;
 
     public event System.Action textureEnglarged;
     public event System.Action textureUpdated;
 
-    public FreeTypeFontAtlas(TextAsset asset)
+    public FreeTypeFontAtlas(string path)
     {
-        m_fontContext = FreeTypeFontApi.CreateFontContext(asset);
+        m_fontContext = FreeTypeFontApi.CreateFontContext(path);
+        Init();
+    }
+
+    public FreeTypeFontAtlas(byte[] bytes)
+    {
+        m_fontContext = FreeTypeFontApi.CreateFontContext(bytes);
+        Init();
+    }
+
+    private void Init()
+    {
         m_glyphs = new Dictionary<GlyphParam, Glyph>();
         m_packer = new AtlasPacker(OnTextureEnlarged, OnTextureUpdated);
     }
@@ -165,6 +176,7 @@ public class FreeTypeFontAtlas : IDisposable
     public void Dispose()
     {
         FreeTypeFontApi.DeleteFontContext(m_fontContext);
+        m_fontContext = IntPtr.Zero;
     }
 
     private void OnTextureEnlarged()
@@ -191,24 +203,27 @@ public class FreeTypeFontAtlas : IDisposable
 
         if (!m_glyphs.TryGetValue(glyphContext, out glyph))
         {
-            var data = FreeTypeFontApi.GetGlyph(m_fontContext, charCode, out glyph.ftGlyph, fontSize, outlineSize, bold);
-
-            if (data != IntPtr.Zero)
+            if (m_fontContext != IntPtr.Zero)
             {
-                if (m_packer.Alloc(ref glyph))
-                {
-                    m_packer.UpdateData(data, glyph.ftGlyph);
-                    m_packer.Advance(glyph.ftGlyph);
-                }
-                else
-                {
-                    glyph.ftGlyph.code = 0;
-                }
-            }
+                var data = FreeTypeFontApi.GetGlyph(m_fontContext, charCode, out glyph.ftGlyph, fontSize, outlineSize, bold);
 
-            if (glyph.ftGlyph.code != 0)
-            {
-                m_glyphs[glyphContext] = glyph;
+                if (data != IntPtr.Zero)
+                {
+                    if (m_packer.Alloc(ref glyph))
+                    {
+                        m_packer.UpdateData(data, glyph.ftGlyph);
+                        m_packer.Advance(glyph.ftGlyph);
+                    }
+                    else
+                    {
+                        glyph.ftGlyph.code = 0;
+                    }
+                }
+
+                if (glyph.ftGlyph.code != 0)
+                {
+                    m_glyphs[glyphContext] = glyph;
+                }
             }
         }
 
