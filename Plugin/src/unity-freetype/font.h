@@ -65,7 +65,8 @@ struct FreeTypeContext
     , lastStrokeSize(0)
     {}
     
-    FreeTypeContext(unsigned char* pData, unsigned int length);
+    FreeTypeContext(const char* pPath);
+    FreeTypeContext(const FT_Byte* pData, unsigned int length);
     ~FreeTypeContext();   
 
     void SetSize(int _size);
@@ -79,15 +80,16 @@ public:
 private:
     int lastSize;
     int lastStrokeSize;
-    unsigned char* m_pData;
+    FT_Byte* m_pData;
 };
 
 class FontContext
 {
 public:
-    FontContext(unsigned char* pData, unsigned int length);
+    FontContext(const char* pPath);
+    FontContext(const FT_Byte* pData, unsigned int length);
     
-    unsigned char* GetGlyph(int code, FreeTypeGlyph& glyph, int fontSize, int outlineSize = 0, bool bold = false);
+    const FT_Byte* GetGlyph(int code, FreeTypeGlyph& glyph, int fontSize, int outlineSize = 0, bool bold = false);
 private:
     void RenderSpans(FT_Outline* pOutline, Spans* spans);
     

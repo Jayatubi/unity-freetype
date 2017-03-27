@@ -1,6 +1,11 @@
 #include "interface.h"
 
-FontContext* UFT_CreateFontContext(unsigned char* pData, unsigned int length)
+FontContext* UFT_CreateFontContextByFile(const char* pPath)
+{
+    return new FontContext(pPath);
+}
+
+FontContext* UFT_CreateFontContextByData(const FT_Byte* pData, unsigned int length)
 {
     return new FontContext(pData, length);
 }
@@ -13,9 +18,9 @@ void UFT_DeleteFontContext(FontContext* pContext)
     }
 }
 
-unsigned char* UFT_GetGlyph(FontContext* pContext, int code, FreeTypeGlyph* glyph, int fontSize, int outlineSize, bool bold)
+const FT_Byte* UFT_GetGlyph(FontContext* pContext, int code, FreeTypeGlyph* glyph, int fontSize, int outlineSize, bool bold)
 {
-    unsigned char* pResult = nullptr;
+    const FT_Byte* pResult = nullptr;
 
     if (pContext != nullptr && glyph != nullptr)
     {

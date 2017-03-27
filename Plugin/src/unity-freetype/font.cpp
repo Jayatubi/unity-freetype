@@ -3,14 +3,26 @@
 #define FT_SUCCEES(...) ((__VA_ARGS__) == 0)
 #define FT_SHIFT6(Arg)  (int)((Arg) >> 6)
 
-FreeTypeContext::FreeTypeContext(unsigned char* pData, unsigned int length)
+FreeTypeContext::FreeTypeContext(const char* pPath)
 : m_face(0)
 , m_stroker(nullptr)
 , m_pData(nullptr)
 {
-    if (FT_SUCCEES(FT_Init_FreeType(&m_FTlibrary)))
+    if (pPath != nullptr && FT_SUCCEES(FT_Init_FreeType(&m_FTlibrary)))
     {
-        m_pData = new unsigned char[length];
+        FT_New_Face(m_FTlibrary, pPath, 0, &m_face);
+        FT_Select_Charmap(m_face, FT_ENCODING_UNICODE);
+    }
+}
+
+FreeTypeContext::FreeTypeContext(const FT_Byte* pData, unsigned int length)
+: m_face(0)
+, m_stroker(nullptr)
+, m_pData(nullptr)
+{
+    if (pData != nullptr && length > 0 && FT_SUCCEES(FT_Init_FreeType(&m_FTlibrary)))
+    {
+        m_pData = new FT_Byte[length];
         memcpy(m_pData, pData, length);
         FT_New_Memory_Face(m_FTlibrary, m_pData, length, 0, &m_face);
         FT_Select_Charmap(m_face, FT_ENCODING_UNICODE);
@@ -69,7 +81,12 @@ void FreeTypeContext::SetStroker(int _size)
     }
 }
 
-FontContext::FontContext(unsigned char* pData, unsigned int length)
+FontContext::FontContext(const char* pPath)
+: m_context(pPath)
+{    
+}
+
+FontContext::FontContext(const FT_Byte* pData, unsigned int length)
 : m_context(pData, length)
 {
 }
@@ -93,9 +110,9 @@ void FontContext::RenderSpans(FT_Outline* pOutline, Spans* spans)
 }
 
 
-unsigned char* FontContext::GetGlyph(int code, FreeTypeGlyph& glyph, int fontSize, int outlineSize, bool bold)
+const FT_Byte* FontContext::GetGlyph(int code, FreeTypeGlyph& glyph, int fontSize, int outlineSize, bool bold)
 {
-    static unsigned char bitmapBuffer[0x2000] = {0};
+    static FT_Byte bitmapBuffer[0x2000] = {0};
     
     memset(&glyph, 0, sizeof(FreeTypeGlyph));
     
